@@ -289,6 +289,7 @@ int main()
 
 	permaAssertComment(glfwInit(), "err initializing glfw");
 	glfwWindowHint(GLFW_SAMPLES, 4);
+	glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE);
 
 	int w = 500;
 	int h = 500;
@@ -318,6 +319,11 @@ int main()
 		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;           // Enable Docking
 		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;         // Enable Multi-Viewport / Platform Windows
+
+		// Support hi-dpi monitors
+		io.ConfigFlags |= ImGuiConfigFlags_DpiEnableScaleViewports;
+		io.ConfigFlags |= ImGuiConfigFlags_DpiEnableScaleFonts;
+
 		//io.ConfigViewportsNoAutoMerge = true;
 		//io.ConfigViewportsNoTaskBarIcon = true;
 		
