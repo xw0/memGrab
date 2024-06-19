@@ -157,7 +157,11 @@ void *SearchForValue::render(PROCESS handle)
 
 		if (foundPtr)
 		{
-			assert(foundValuesTextMap.count(currentItem) > 0);
+			// refresh current item
+			std::stringstream ss;
+			ss << std::hex << ((unsigned long long)foundValues[currentItem]);
+			foundValuesTextMap[currentItem] = ss.str();
+
 			if (ImGui::Button(std::string("Copy: " + foundValuesTextMap[currentItem]).c_str()))
 			{
 
