@@ -1,6 +1,7 @@
 /out
 bin/
 build/
+_build/
 /.vs
 .vs/
 .idea/
