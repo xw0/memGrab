@@ -3,6 +3,7 @@
 #include "systemFunctions.h"
 #include <iostream>
 #include <sstream>
+#include <unordered_map>
 
 #undef min
 #undef max
@@ -131,23 +132,23 @@ void *SearchForValue::render(PROCESS handle)
 	
 	if (!foundValues.empty())
 	{
-		for (int i = 0; i < foundValues.size(); i++)
-		{
-			if (i >= foundValuesText.size())
-			{
-				foundValuesText.push_back(new char[17]);
+		auto valueGetter = [](void* data, int index, const char** result) -> bool {
+			SearchForValue* _this = (SearchForValue*)data;
+
+			if (index < 0 || index >= _this->foundValues.size()) {
+				return false;
 			}
 
 			std::stringstream ss;
-			ss << std::hex << ((unsigned long long)foundValues[i]);
+			ss << std::hex << ((unsigned long long)_this->foundValues[index]);
+			_this->foundValuesTextMap[index] = ss.str();
 
-			strcpy(foundValuesText[i], ss.str().c_str());
-
-		}
-
+			*result = _this->foundValuesTextMap[index].c_str();
+			return true;
+		};
 
 		ImGui::Text("Found pointers: %d", (int)foundValues.size());
-		ImGui::ListBox("##found pointers", &currentItem, &foundValuesText[0], foundValues.size(), std::min((decltype(foundValues.size()))10ull, foundValues.size()));
+		ImGui::ListBox("##found pointers", &currentItem, valueGetter, this, foundValues.size(), std::min((decltype(foundValues.size()))10ull, foundValues.size()));
 		
 		if (currentItem < foundValues.size())
 		{
@@ -156,7 +157,8 @@ void *SearchForValue::render(PROCESS handle)
 
 		if (foundPtr)
 		{
-			if (ImGui::Button(std::string("Copy: " + std::string(foundValuesText[currentItem])).c_str()))
+			assert(foundValuesTextMap.count(currentItem) > 0);
+			if (ImGui::Button(std::string("Copy: " + foundValuesTextMap[currentItem]).c_str()))
 			{
 
 			}else

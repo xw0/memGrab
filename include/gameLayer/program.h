@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <unordered_map>
 #include "errorLogging.h"
 
 #define MAX_PATH_COMMON 256
@@ -217,7 +218,8 @@ struct SearchForValue
 	void* render(PROCESS id);
 
 	std::vector<void*> foundValues;
-	std::vector<char*> foundValuesText;
+	// std::vector<char*> foundValuesText;
+	std::unordered_map<int, std::string> foundValuesTextMap;
 };
 
 struct OppenedProgram
