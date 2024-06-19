@@ -218,7 +218,17 @@ struct SearchForValue
 	void* render(PROCESS id);
 
 	std::vector<void*> foundValues;
-	// std::vector<char*> foundValuesText;
+	std::unordered_map<int, std::string> foundValuesTextMap;
+};
+
+struct SearchForInt32
+{
+	int currentItem = 0;
+
+	void clear();
+	void* render(PROCESS id);
+
+	std::vector<std::pair<void*, int32_t>> foundValues;
 	std::unordered_map<int, std::string> foundValuesTextMap;
 };
 
@@ -231,7 +241,9 @@ struct OppenedProgram
 	ErrorLog writeLog;
 	ErrorLog errorLog;
 	ErrorLog hexLog;
-	SearchForValue searcher;
+	
+	// SearchForValue searcher;
+	SearchForInt32 searcher;
 
 	bool isAlieve();
 	bool render();

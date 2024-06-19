@@ -162,24 +162,6 @@ std::string printAllWindows(PID& pid)
 
 }
 
-void refindBytePatternInProcessMemory(PROCESS process, void* pattern, size_t patternLen, std::vector<void*>& found)
-{
-	if (patternLen == 0) { return; }
-
-	auto newFound = findBytePatternInProcessMemory(process, pattern, patternLen);
-
-	std::vector<void*> intersect;
-	intersect.resize(std::min(found.size(), newFound.size()));
-
-	std::set_intersection(found.begin(), found.end(),
-		newFound.begin(), newFound.end(),
-		intersect.begin());
-
-	intersect.erase(std::remove(intersect.begin(), intersect.end(), nullptr), intersect.end());
-
-	found = std::move(intersect);
-}
-
 //http://kylehalladay.com/blog/2020/05/20/Rendering-With-Notepad.html
 std::vector<void *> findBytePatternInProcessMemory(PROCESS process, void *pattern, size_t patternLen)
 {
@@ -221,6 +203,109 @@ std::vector<void *> findBytePatternInProcessMemory(PROCESS process, void *patter
 				}
 			}
 			delete[] localCopyContents;
+		}
+	}
+
+	return returnVec;
+}
+
+void refindBytePatternInProcessMemory(PROCESS process, void* pattern, size_t patternLen, std::vector<void*>& found)
+{
+	if (patternLen == 0) { return; }
+
+	auto newFound = findBytePatternInProcessMemory(process, pattern, patternLen);
+
+	std::vector<void*> intersect;
+	intersect.resize(std::min(found.size(), newFound.size()));
+
+	std::set_intersection(found.begin(), found.end(),
+		newFound.begin(), newFound.end(),
+		intersect.begin());
+
+	intersect.erase(std::remove(intersect.begin(), intersect.end(), nullptr), intersect.end());
+
+	found = std::move(intersect);
+}
+
+std::vector<std::pair<void*, int32_t>> findInt32InProcessMemory(PROCESS process, int32_t minValue, int32_t maxValue)
+{
+	std::vector<std::pair<void*, int32_t>> returnVec;
+	returnVec.reserve(10000);
+
+	auto query = initVirtualQuery(process);
+
+	if (!query.oppened())
+		return {};
+
+	void* low = nullptr;
+	void* hi = nullptr;
+	int flags = memQueryFlags_None;
+
+	while (getNextQuery(query, low, hi, flags))
+	{
+		if ((flags | memQueryFlags_Read) && (flags | memQueryFlags_Write))
+		{
+			//search for our byte patern
+			size_t size = (char*)hi - (char*)low;
+			char* localCopyContents = new char[size];
+			if (
+				readMemory(process, low, size, localCopyContents)
+				)
+			{
+				char* cur = localCopyContents;
+				size_t curPos = 0;
+				while (curPos < size - sizeof(int32_t) + 1)
+				{
+					int32_t value = *(int32_t*)cur;
+					if (value >= minValue && value <= maxValue)
+					{
+						returnVec.push_back({ (char*)low + curPos, value });
+					}
+					curPos += sizeof(int32_t);
+					cur += sizeof(int32_t);
+				}
+			}
+			delete[] localCopyContents;
+		}
+	}
+
+	return returnVec;
+}
+
+std::vector<std::pair<void*, int32_t>> refindDecreasedInt32InProcessMemory(PROCESS process, int32_t minValue, int32_t maxValue, const std::vector<std::pair<void*, int32_t>>& originalFound)
+{
+	std::vector<std::pair<void*, int32_t>> returnVec;
+	
+	for (const auto& p : originalFound) {
+		void* ptr = p.first;
+		int32_t originalValue = p.second;
+		int32_t currentValue = 0;
+		if (readMemory(process, ptr, sizeof(int32_t), &currentValue)) {
+			if (currentValue >= minValue && currentValue <= maxValue) {
+				if (currentValue < originalValue) {
+					returnVec.push_back({ ptr, currentValue });
+				}
+			}
+		}
+	}
+
+	return returnVec;
+}
+
+std::vector<std::pair<void*, int32_t>> refindIncreasedInt32InProcessMemory(PROCESS process, int32_t minValue, int32_t maxValue, const std::vector<std::pair<void*, int32_t>>& originalFound)
+{
+	std::vector<std::pair<void*, int32_t>> returnVec;
+
+	for (const auto& p : originalFound) {
+		void* ptr = p.first;
+		int32_t originalValue = p.second;
+		int32_t currentValue = 0;
+		if (readMemory(process, ptr, sizeof(int32_t), &currentValue)) {
+			if (currentValue >= minValue && currentValue <= maxValue) {
+				if (currentValue > originalValue) {
+					returnVec.push_back({ ptr, currentValue });
+				}
+			}
 		}
 	}
 

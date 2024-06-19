@@ -4,13 +4,13 @@
 #include <iostream>
 #include <sstream>
 #include <unordered_map>
+#include <format>
 
 #undef min
 #undef max
 
 void OpenProgram::render()
 {
-
 	//ImGui::Text("Process name");
 	//bool open = ImGui::InputText("##Enter process name", processName, sizeof(processName), ImGuiInputTextFlags_EnterReturnsTrue);
 
@@ -178,6 +178,106 @@ void *SearchForValue::render(PROCESS handle)
 	return foundPtr;
 }
 
+void SearchForInt32::clear()
+{
+	foundValues.clear();
+	currentItem = 0;
+}
+
+void* SearchForInt32::render(PROCESS handle)
+{
+	ImGui::PushID(handle);
+
+	ImGui::Text("search for int32");
+
+	bool changed = 0;
+
+	static int32_t minValue = 100;
+	static int32_t maxValue = 1200;
+
+	ImGui::InputInt("Min", &minValue);
+	ImGui::InputInt("Max", &maxValue);
+
+	void* foundPtr = 0;
+
+	if (changed)
+	{
+		foundValues.clear();
+	}
+
+	if (ImGui::Button("Search"))
+	{
+		foundValues = findInt32InProcessMemory(handle, minValue, maxValue);
+	}
+
+	if (ImGui::Button("Refine / Decreased")) 
+	{
+		foundValues = refindDecreasedInt32InProcessMemory(handle, minValue, maxValue, foundValues);
+	}
+
+	if (ImGui::Button("Refine / Increased"))
+	{
+		foundValues = refindIncreasedInt32InProcessMemory(handle, minValue, maxValue, foundValues);
+	}
+
+	ImGui::SameLine();
+	if (ImGui::Button("Clear"))
+	{
+		foundValues.clear();
+	}
+
+	if (!foundValues.empty())
+	{
+		auto valueGetter = [](void* data, int index, const char** result) -> bool {
+			SearchForInt32* _this = (SearchForInt32*)data;
+
+			if (index < 0 || index >= _this->foundValues.size()) {
+				return false;
+			}
+
+			void* ptr = _this->foundValues[index].first;
+			int32_t value = _this->foundValues[index].second;
+
+			std::string output = std::format("0x{:016x} ({})", reinterpret_cast<std::uintptr_t>(ptr), value);
+			_this->foundValuesTextMap[index] = output;
+
+			*result = _this->foundValuesTextMap[index].c_str();
+			return true;
+			};
+
+		ImGui::Text("Found pointers: %d", (int)foundValues.size());
+		ImGui::ListBox("##found pointers", &currentItem, valueGetter, this, foundValues.size(), std::min((decltype(foundValues.size()))10ull, foundValues.size()));
+
+		if (currentItem < foundValues.size())
+		{
+			foundPtr = foundValues[currentItem].first;
+		}
+
+		if (foundPtr)
+		{
+			// refresh current item
+			void* ptr = foundValues[currentItem].first;
+			int32_t value = foundValues[currentItem].second;
+
+			std::string output = std::format("0x{:016x} ({})", reinterpret_cast<std::uintptr_t>(ptr), value);
+			foundValuesTextMap[currentItem] = output;
+
+			if (ImGui::Button(std::string("Copy: " + foundValuesTextMap[currentItem]).c_str()))
+			{
+
+			}
+			else
+			{
+				foundPtr = 0;
+			}
+		}
+	}
+
+	ImGui::PopID();
+
+	return foundPtr;
+}
+
 bool OppenedProgram::render()
 {
 	std::stringstream s;
@@ -214,6 +314,10 @@ bool OppenedProgram::render()
 				typeInput<__COUNTER__>(data, &enterPressed, 0, &s);
 				ImGui::SameLine();
 				enterPressed |= ImGui::Button("Write");
+
+				static bool lockMemory = false;
+				ImGui::Checkbox("Lock", &lockMemory);
+				enterPressed |= lockMemory;
 
 				if (enterPressed)
 				{

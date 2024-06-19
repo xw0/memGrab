@@ -74,4 +74,10 @@ bool getNextQuery(OppenedQuery &query, void* &low, void* &hi, int& flags);
 std::vector<void*> findBytePatternInProcessMemory(PROCESS process, void* pattern, size_t patternLen);
 
 void refindBytePatternInProcessMemory(PROCESS process, void* pattern, size_t patternLen, std::vector<void*>& found);
+
+
+std::vector<std::pair<void*, int32_t>> findInt32InProcessMemory(PROCESS process, int32_t minValue, int32_t maxValue);
+std::vector<std::pair<void*, int32_t>> refindDecreasedInt32InProcessMemory(PROCESS process, int32_t minValue, int32_t maxValue, const std::vector<std::pair<void*, int32_t>>& originalFound);
+std::vector<std::pair<void*, int32_t>> refindIncreasedInt32InProcessMemory(PROCESS process, int32_t minValue, int32_t maxValue, const std::vector<std::pair<void*, int32_t>>& originalFound);
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
